@@ -1,0 +1,27 @@
+pipeline {
+    agent any
+    stages {
+        stage('git checkout') {
+            steps {
+               checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[ url: 'https://github.com/Noorunnsa/vprofile-project.git']])
+            }
+        }
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'SonarQubeScanner'
+                    withSonarQubeEnv('sonarqube') {
+                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=Sonar_Project -Dsonar.language=yaml -Dsonar.host.url=http://192.168.234.140:9000 -Dsonar.login=sqa_f75090bb51d9ba1021bd9f1f4f064f2c6d62d4be -Dsonar.exclusions=**/*.java"
+                    }
+                }
+            }
+        }
+          stage("Quality Gate") {
+            steps {
+              timeout(time: 5, unit: 'MINUTES') {
+                waitForQualityGate abortPipeline: true
+            }
+          }
+    }
+}
+}
